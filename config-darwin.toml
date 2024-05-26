@@ -1,18 +1,33 @@
-changelog-seen = 2
+change-id = 121754
 
 [llvm]
 thin-lto = true
-targets = "AArch64;ARM;X86"
+targets = "AArch64;ARM;X86;RISCV"
 experimental-targets = ""
 link-shared = true
 clang = true
 download-ci-llvm = false
+version-suffix = ""
+
+[llvm.build-config]
+LLVM_VERSION_SUFFIX = ""
+LLVM_ENABLE_ZSTD = "FORCE_ON"
+LLVM_USE_STATIC_ZSTD = "TRUE"
 
 [build]
 docs = false
 submodules = false
 extended = true
-tools = ["cargo", "src", "clippy", "rust-analyzer", "rustfmt"]
+tools = [
+    "cargo",
+    "src",
+    "clippy",
+    "rust-analyzer",
+    "rustfmt",
+    "rust-analyzer-proc-macro-srv",
+]
+optimized-compiler-builtins = false
+cargo-native-static = true
 
 [install]
 prefix = "../out"
@@ -24,6 +39,8 @@ lld = true
 llvm-tools = true
 jemalloc = true
 lto = "thin"
+strip = true
+codegen-units = 1
 
 [target.aarch64-apple-darwin]
 llvm-has-rust-patches = false

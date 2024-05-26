@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 
-# Copyright 2022-2023 Google LLC.
+# Copyright 2022-2024 Google LLC.
 # SPDX-License-Identifier: Apache-2.0
-
-set -e
 
 if ! uname | grep -q 'MINGW64_NT'; then
   echo 'This script should run on MSYS2 bash'
@@ -29,26 +27,6 @@ clean_storage() {
     "$GOROOT_1_15_X64" "$GOROOT_1_16_X64" "$GOROOT_1_17_X64" "$GOROOT_1_18_X64"
 }
 
-replace_cp() {
-  local src=$1
-  local dest=$2
-
-  for d in $dest/*; do
-    local s=$src/$(basename $d)
-    if [ -L $s ]; then
-      # It is possible that the symlink is pointing to a new file, copy it first
-      local s_real=$(realpath $s)
-      local d_real=$dest/$(basename $s_real)
-      cp -af $s_real $d_real
-      # Then create the symlink
-      local path=$(readlink $s)
-      ln -sf $path $d
-    elif [ -f $s ]; then
-      cp -af $s $d
-    fi
-  done
-}
-
 build() {
   cd rust
   python ./x.py --config '../config-windows.toml' --build $TRIPLE install
@@ -58,9 +36,16 @@ build() {
   find . -name '*.old' -delete
   cp -af ../rust/build/$TRIPLE/llvm/bin llvm-bin || true
   cp -an ../rust/build/$TRIPLE/llvm/bin/. llvm-bin/.
-  cp -af $(../rust/build/$TRIPLE/llvm/bin/clang -print-resource-dir)/include clang-include
   cp -af lib/rustlib/$TRIPLE/bin/rust-lld.exe llvm-bin/lld.exe
+  cp -af ../rust/build/tmp/dist/lib/rustlib/. lib/rustlib/.
   cd ..
+}
+
+cp_sys_dlls() {
+  local dir=$(dirname $1)
+  for lib in $(ldd $1 | grep ' /ucrt64/bin/' | awk '{ print $1 }'); do
+    cp /ucrt64/bin/$lib $dir
+  done
 }
 
 ndk() {
@@ -73,25 +58,21 @@ ndk() {
   cd ndk/toolchains
 
   local LLVM_DIR=llvm/prebuilt/$NDK_DIRNAME
-
-  # Replace headers
-  local NDK_RES=$($LLVM_DIR/bin/clang -print-resource-dir)
-  rm -rf $NDK_RES/include
-  mv rust/clang-include $NDK_RES/include
+  local MINGW_DIR=rust/lib/rustlib/$TRIPLE/bin/self-contained
 
   # Replace files with those from the rust toolchain
-  replace_cp rust/llvm-bin $LLVM_DIR/bin
-  cp -af rust/llvm-bin/lld.exe $LLVM_DIR/bin/lld.exe
+  touch $LLVM_DIR/bin/lld.exe
+  update_dir rust/llvm-bin $LLVM_DIR/bin
+  rm -rf rust/llvm-bin
   ln -sf lld.exe $LLVM_DIR/bin/ld.exe
   ln -sf lld.exe $LLVM_DIR/bin/ld.lld.exe
-  rm -rf rust/llvm-bin
 
-  # Now that clang is replaced, move files to the correct location
-  local NEW_NDK_RES=$($LLVM_DIR/bin/clang -print-resource-dir)
-  if [ $NEW_NDK_RES != $NDK_RES ]; then
-    mkdir -p $(dirname $NEW_NDK_RES)
-    mv $NDK_RES $NEW_NDK_RES
-  fi
+  # Copy runtime dlls
+  cp_sys_dlls $LLVM_DIR/bin/clang.exe
+  cp_sys_dlls rust/bin/rustc.exe
+  cp_sys_dlls $MINGW_DIR/ld.exe
+  cp_sys_dlls $MINGW_DIR/x86_64-w64-mingw32-gcc.exe
+
   cd ../..
 }
 
@@ -101,13 +82,4 @@ if [ -n "$GITHUB_ACTION" ]; then
   clean_storage
 fi
 
-clone
-build
-ndk
-
-# Bundle the entire mingw toolchain
-curl -o mingw.7z -O -L "https://github.com/niXman/mingw-builds-binaries/releases/download/13.1.0-rt_v11-rev1/x86_64-13.1.0-release-win32-seh-ucrt-rt_v11-rev1.7z"
-7z x mingw.7z
-cp -af mingw64/. ndk/toolchains/rust/.
-
-dist
+parse_args $@

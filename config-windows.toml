@@ -1,18 +1,33 @@
-changelog-seen = 2
+change-id = 121754
 
 [llvm]
-targets = "AArch64;ARM;X86"
+targets = "AArch64;ARM;X86;RISCV"
 experimental-targets = ""
 clang = true
 static-libstdcpp = true
 ldflags = "-s -static-libgcc -static"
 download-ci-llvm = false
+version-suffix = ""
+
+[llvm.build-config]
+LLVM_VERSION_SUFFIX = ""
+LLVM_ENABLE_ZSTD = "FORCE_ON"
+LLVM_USE_STATIC_ZSTD = "TRUE"
+LLVM_USE_SYMLINKS = "TRUE"
 
 [build]
 docs = false
 submodules = false
 extended = true
-tools = ["cargo", "src", "clippy", "rust-analyzer", "rustfmt"]
+tools = [
+    "cargo",
+    "src",
+    "clippy",
+    "rust-analyzer",
+    "rustfmt",
+    "rust-analyzer-proc-macro-srv",
+]
+optimized-compiler-builtins = false
 cargo-native-static = true
 
 [install]
@@ -23,9 +38,11 @@ sysconfdir = "etc"
 channel = "nightly"
 lld = true
 llvm-tools = true
+strip = true
+codegen-units = 1
 
 [dist]
-include-mingw-linker = false
+include-mingw-linker = true
 
 [target.x86_64-pc-windows-gnu]
 llvm-has-rust-patches = false
