@@ -58,6 +58,12 @@ clone() {
   # Move the NDK LLVM into Rust's source
   rm -rf rust/src/llvm-project
   mv llvm-project rust/src/llvm-project
+
+  cd rust/src/llvm-project
+  for p in ../../../ollvm/*.patch; do
+    patch -p1 < $p
+  done
+  cd ../../..
 }
 
 dl_ndk() {
