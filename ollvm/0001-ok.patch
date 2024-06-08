@@ -1,7 +1,7 @@
-From 80033c6078cad55c166e640ecf09a6b3ba4fdf7b Mon Sep 17 00:00:00 2001
+From c11435e817a5ae854262ec6f72e79ffc7b92904f Mon Sep 17 00:00:00 2001
 From: DeYouOS <2721624510@qq.com>
-Date: Sat, 8 Jun 2024 01:58:08 +0800
-Subject: [PATCH] up
+Date: Sat, 8 Jun 2024 09:23:21 +0800
+Subject: [PATCH] ok
 
 ---
  llvm/include/llvm/IR/Function.h               |    2 +
@@ -14,11 +14,11 @@ Subject: [PATCH] up
  llvm/lib/Passes/Obfuscation/Flattening.h      |   30 +
  .../Obfuscation/IPObfuscationContext.cpp      |  331 +++++
  .../Passes/Obfuscation/IPObfuscationContext.h |   60 +
- .../lib/Passes/Obfuscation/IndirectBranch.cpp |  153 ++
+ .../lib/Passes/Obfuscation/IndirectBranch.cpp |  155 ++
  llvm/lib/Passes/Obfuscation/IndirectBranch.h  |   41 +
  llvm/lib/Passes/Obfuscation/IndirectCall.cpp  |  159 +++
  llvm/lib/Passes/Obfuscation/IndirectCall.h    |   39 +
- .../Obfuscation/IndirectGlobalVariable.cpp    |  168 +++
+ .../Obfuscation/IndirectGlobalVariable.cpp    |  169 +++
  .../Obfuscation/IndirectGlobalVariable.h      |   42 +
  .../Passes/Obfuscation/ObfuscationOptions.cpp |  114 ++
  .../Passes/Obfuscation/ObfuscationOptions.h   |   26 +
@@ -32,7 +32,7 @@ Subject: [PATCH] up
  llvm/lib/Passes/Obfuscation/Utils.h           |   39 +
  llvm/lib/Passes/Obfuscation/compat/CallSite.h |  767 ++++++++++
  llvm/lib/Passes/PassBuilder.cpp               |   48 +
- 28 files changed, 5915 insertions(+)
+ 28 files changed, 5918 insertions(+)
  create mode 100644 llvm/lib/Passes/Obfuscation/BogusControlFlow.cpp
  create mode 100644 llvm/lib/Passes/Obfuscation/BogusControlFlow.h
  create mode 100644 llvm/lib/Passes/Obfuscation/CryptoUtils.cpp
@@ -2260,7 +2260,7 @@ index 000000000..6a1aee516
 \ No newline at end of file
 diff --git a/llvm/lib/Passes/Obfuscation/Flattening.cpp b/llvm/lib/Passes/Obfuscation/Flattening.cpp
 new file mode 100644
-index 000000000..dec2b3678
+index 000000000..a681b2597
 --- /dev/null
 +++ b/llvm/lib/Passes/Obfuscation/Flattening.cpp
 @@ -0,0 +1,111 @@
@@ -2295,7 +2295,7 @@ index 000000000..dec2b3678
 +bool FlatteningPass::flatten(Function &F) {
 +    // 基本块数量不超过1则无需平坦化
 +    if(F.size() <= 1){
-+        //outs() << "\033[0;33mFunction size is lower then one\033[0m\n"; // warning
++        // outs() << "\033[0;33mFunction size is lower then one\033[0m\n"; // warning
 +        return false;
 +    }
 +    // 将除入口块（第一个基本块）以外的基本块保存到一个 vector 容器中，便于后续处理
@@ -2820,10 +2820,10 @@ index 000000000..b84743027
 \ No newline at end of file
 diff --git a/llvm/lib/Passes/Obfuscation/IndirectBranch.cpp b/llvm/lib/Passes/Obfuscation/IndirectBranch.cpp
 new file mode 100644
-index 000000000..cf66d40b9
+index 000000000..acd5be638
 --- /dev/null
 +++ b/llvm/lib/Passes/Obfuscation/IndirectBranch.cpp
-@@ -0,0 +1,153 @@
+@@ -0,0 +1,155 @@
 +/*
 +LLVM Indirect Branching Pass
 +Copyright (C) 2017 Zhang(https://github.com/Naville/)
@@ -2845,9 +2845,11 @@ index 000000000..cf66d40b9
 +#include <random>
 +
 +PreservedAnalyses IndirectBranchPass::run(Module &M, ModuleAnalysisManager &AM) {
++  /*
 +  if (this->flag) {
-+    outs() << "[Soule] force.run.IndirectBranchPass\n";
++    // outs() << "[Soule] force.run.IndirectBranchPass\n";
 +  }
++  */
 +  for (Function &Fn : M) {
 +    if (toObfuscate(flag, &Fn, "ibr")) {
 +
@@ -3240,10 +3242,10 @@ index 000000000..845369457
 \ No newline at end of file
 diff --git a/llvm/lib/Passes/Obfuscation/IndirectGlobalVariable.cpp b/llvm/lib/Passes/Obfuscation/IndirectGlobalVariable.cpp
 new file mode 100644
-index 000000000..0cee1cee2
+index 000000000..c4e599289
 --- /dev/null
 +++ b/llvm/lib/Passes/Obfuscation/IndirectGlobalVariable.cpp
-@@ -0,0 +1,168 @@
+@@ -0,0 +1,169 @@
 +/*
 +LLVM Indirect Branching Pass
 +Copyright (C) 2017 Zhang(https://github.com/Naville/)
@@ -3265,10 +3267,11 @@ index 000000000..0cee1cee2
 +#include <random>
 +
 +PreservedAnalyses IndirectGlobalVariablePass::run(Module &M, ModuleAnalysisManager &AM) {
-+
++  /*
 +  if (this->flag) {
-+    outs() << "[Soule] force.run.IndirectGlobalVariablePass\n";
++    // outs() << "[Soule] force.run.IndirectGlobalVariablePass\n";
 +  }
++  */
 +  for (Function &Fn : M) {
 +    if (!toObfuscate(flag, &Fn, "igv")) {
 +      continue;
@@ -3618,7 +3621,7 @@ index 000000000..dac70cf43
 \ No newline at end of file
 diff --git a/llvm/lib/Passes/Obfuscation/SplitBasicBlock.cpp b/llvm/lib/Passes/Obfuscation/SplitBasicBlock.cpp
 new file mode 100644
-index 000000000..ebdb8f87d
+index 000000000..d7d1de0d4
 --- /dev/null
 +++ b/llvm/lib/Passes/Obfuscation/SplitBasicBlock.cpp
 @@ -0,0 +1,143 @@
@@ -3683,22 +3686,22 @@ index 000000000..ebdb8f87d
 +    // 遍历函数的全部基本块
 +    for (std::vector<BasicBlock *>::iterator I = origBB.begin(), IE = origBB.end();I != IE; ++I){
 +        BasicBlock *curr = *I;
-+        //outs() << "\033[1;32mSplitNum : " << SplitNum << "\033[0m\n";
-+        //outs() << "\033[1;32mBasicBlock Size : " << curr->size() << "\033[0m\n";
++        // outs() << "\033[1;32mSplitNum : " << SplitNum << "\033[0m\n";
++        // outs() << "\033[1;32mBasicBlock Size : " << curr->size() << "\033[0m\n";
 +        int splitN = SplitNum;
 +        // 无需分割只有一条指令的基本块
 +        // 不可分割含有PHI指令基本块
 +        if (curr->size() < 2 || containsPHI(curr)){
-+            //outs() << "\033[0;33mThis BasicBlock is lower then two or had PIH Instruction!\033[0m\n";
++            // outs() << "\033[0;33mThis BasicBlock is lower then two or had PIH Instruction!\033[0m\n";
 +            continue;
 +        }
 +        // 检查splitN和基本块大小 如果传入的分割块数甚至大于等于基本块自身大小 则修改分割数为基本块大小减一
 +        if ((size_t)splitN >= curr->size()){
-+            //outs() << "\033[0;33mSplitNum is bigger then currBasicBlock's size\033[0m\n"; // warning
-+            //outs() << "\033[0;33mSo SplitNum Now is BasicBlock's size -1 : " << (curr->size() - 1) << "\033[0m\n";
++            // outs() << "\033[0;33mSplitNum is bigger then currBasicBlock's size\033[0m\n"; // warning
++            // outs() << "\033[0;33mSo SplitNum Now is BasicBlock's size -1 : " << (curr->size() - 1) << "\033[0m\n";
 +            splitN = curr->size() - 1;
 +        } else {
-+            //outs() << "\033[1;32msplitNum Now is " << splitN << "\033[0m\n";
++            // outs() << "\033[1;32msplitNum Now is " << splitN << "\033[0m\n";
 +        }
 +        // Generate splits point
 +        std::vector<int> test;
@@ -3808,7 +3811,7 @@ index 000000000..540a67bf7
 \ No newline at end of file
 diff --git a/llvm/lib/Passes/Obfuscation/StringEncryption.cpp b/llvm/lib/Passes/Obfuscation/StringEncryption.cpp
 new file mode 100644
-index 000000000..86c7cb78a
+index 000000000..b13982e00
 --- /dev/null
 +++ b/llvm/lib/Passes/Obfuscation/StringEncryption.cpp
 @@ -0,0 +1,489 @@
@@ -3936,7 +3939,7 @@ index 000000000..86c7cb78a
 +
 +PreservedAnalyses StringEncryptionPass::run(Module &M, ModuleAnalysisManager &AM) {
 +  if (this->flag) {
-+    outs() << "[Soule] force.run.StringEncryptionPass\n";
++    // outs() << "[Soule] force.run.StringEncryptionPass\n";
 +    if (do_StrEnc(M, AM))
 +      return PreservedAnalyses::none();
 +  }
@@ -5035,7 +5038,7 @@ index 000000000..8fecdefee
 +
 diff --git a/llvm/lib/Passes/Obfuscation/Utils.cpp b/llvm/lib/Passes/Obfuscation/Utils.cpp
 new file mode 100644
-index 000000000..33bc9491e
+index 000000000..056f0740b
 --- /dev/null
 +++ b/llvm/lib/Passes/Obfuscation/Utils.cpp
 @@ -0,0 +1,263 @@
@@ -5124,7 +5127,7 @@ index 000000000..33bc9491e
 +    if (f->hasAvailableExternallyLinkage() != 0) {
 +        return false;
 +    }
-+    //outs() << "[Soule] function: " << f->getName().str() << " # annotation: " << readAnnotate(f) << "\n";
++    // outs() << "[Soule] function: " << f->getName().str() << " # annotation: " << readAnnotate(f) << "\n";
 +    // 
 +    // We have to check the nofla flag first
 +    // Because .find("fla") is true for a string like "fla" or
@@ -5139,11 +5142,11 @@ index 000000000..33bc9491e
 +    // 由于Visual Studio无法传入annotation, 增加一个使用函数名匹配是否单独开关的功能
 +    if (obf_function_name_cmd == true) { // 开启使用函数名匹配混淆功能开关
 +        if (f->getName().find("_" + attrNo + "_") != StringRef::npos) {
-+            outs() << "[Soule] " << attrNo << ".function: " << f->getName().str() << "\n";
++            // outs() << "[Soule] " << attrNo << ".function: " << f->getName().str() << "\n";
 +            return false;
 +        }
 +        if (f->getName().find("_" + attr + "_") != StringRef::npos) {
-+            outs() << "[Soule] " << attr << ".function: " << f->getName().str() << "\n";
++            // outs() << "[Soule] " << attr << ".function: " << f->getName().str() << "\n";
 +            return true;
 +        }
 +    }
@@ -6124,7 +6127,7 @@ index 000000000..d75a9da42
 +#endif  // LLVM_IR_CALLSITE_H
 \ No newline at end of file
 diff --git a/llvm/lib/Passes/PassBuilder.cpp b/llvm/lib/Passes/PassBuilder.cpp
-index e251d5646..2b6710252 100644
+index e251d5646..f12b819ba 100644
 --- a/llvm/lib/Passes/PassBuilder.cpp
 +++ b/llvm/lib/Passes/PassBuilder.cpp
 @@ -257,6 +257,17 @@
@@ -6177,7 +6180,7 @@ index e251d5646..2b6710252 100644
 +        obf_function_name_cmd = s_obf_fn_name_cmd;
 +        /*
 +        if (obf_function_name_cmd) {
-+          outs() << "[Soule] enable function name control obfuscation(_ + command + _ | example: function_fla_)\n";
++          // outs() << "[Soule] enable function name control obfuscation(_ + command + _ | example: function_fla_)\n";
 +        }
 +        */
 +        MPM.addPass(StringEncryptionPass(s_obf_sobf)); // 先进行字符串加密 出现字符串加密基本块以后再进行基本块分割和其他混淆 加大解密难度
