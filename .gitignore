@@ -1,9 +1,5 @@
-/rust
+/src
 /out
 /dist
 /tmp
-/ondk-*
 /*.zip
-/llvm-project
-/llvm_android
-/toolchain-utils

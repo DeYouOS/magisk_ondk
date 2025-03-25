@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2022-2024 Google LLC.
+# Copyright 2022-2025 Google LLC.
 # SPDX-License-Identifier: Apache-2.0
 
 . common.sh
@@ -23,50 +23,56 @@ if [ $OS = "darwin" ]; then
   NATIVE_TRIPLE="${NATIVE_ARCH}-apple-darwin"
   DYN_EXT='dylib'
   EXE_FMT='Mach-O'
-
-  # Hardcode to 16k page to support both x64 and arm64
-  # export JEMALLOC_SYS_WITH_LG_PAGE=14
-
-  command -v ninja >/dev/null || brew install ninja
-  command -v zstd >/dev/null || brew install zstd
+  # Always use GNU patch
+  export PATH="$(brew --prefix)/opt/gpatch/bin:$PATH"
 else
   NDK_DIRNAME='linux-x86_64'
   TRIPLE="${ARCH}-unknown-linux-gnu"
   NATIVE_TRIPLE="${NATIVE_ARCH}-unknown-linux-gnu"
   DYN_EXT='so'
   EXE_FMT='ELF'
-
-  command -v cmake >/dev/null || sudo apt-get -y install cmake
-  command -v ninja >/dev/null || sudo apt-get -y install ninja-build
-  command -v clang-12 >/dev/null || sudo apt-get -y install clang-12
-  command -v lld-12 >/dev/null || sudo apt-get -y install lld-12
-  dpkg-query -W libzstd-dev >/dev/null 2>&1 || sudo apt-get -y install libzstd-dev
 fi
 
 build() {
-  cd rust
-  python3 ./x.py --config "../config-${OS}.toml" --host $TRIPLE install
-  cd ../
+  if [ $OS = "darwin" ]; then
+    export MACOSX_DEPLOYMENT_TARGET=11.0
+    # Manually set page size if cross compilation is required (arm64 require 16k page)
+    # export JEMALLOC_SYS_WITH_LG_PAGE=14
 
-  cd out
+    set_llvm_cfg LLVM_BINUTILS_INCDIR $(brew --prefix)/opt/binutils/include
+    set_build_cfg rust.jemalloc true
+  else
+    set_llvm_cfg LLVM_BINUTILS_INCDIR /usr/include
+    set_build_cfg llvm.static-libstdcpp true
+    set_build_cfg rust.use-lld true
+  fi
+
+  set_llvm_cfg LLVM_ENABLE_PLUGINS FORCE_ON
+
+  cd src/rust
+  eval python3 ./x.py --config ../../config.toml --host $TRIPLE $(print_build_cfg) install
+  cd ../../
+}
+
+collect() {
+  cp -af out/rust out/collect
+  cd out/collect
+
+  local RUST_BUILD=../../src/rust/build
+
   find . -name '*.old' -delete
-  cp -af ../rust/build/$TRIPLE/llvm/bin llvm-bin
-  cp -af lib/rustlib/$TRIPLE/bin/rust-lld llvm-bin/lld
-  ln -sf lld llvm-bin/ld
-  find ../rust/build/$TRIPLE/llvm/lib -name "*.${DYN_EXT}*" -exec cp -an {} lib \;
-
-  # Strip executables
-  llvm-bin/llvm-strip -s $(find llvm-bin -type f -exec sh -c "file {} | grep -q $EXE_FMT" \; -print)
-  llvm-bin/llvm-strip -s $(find lib -maxdepth 1 -type f -exec sh -c "file {} | grep -q $EXE_FMT" \; -print)
-
-  cd ..
+  cp -af $RUST_BUILD/$TRIPLE/llvm/bin llvm-bin
+  find $RUST_BUILD/$TRIPLE/llvm/lib -name "*.${DYN_EXT}*" -exec cp -an {} lib \;
+  strip_exe llvm-bin/llvm-strip
+  cd ../../
 }
 
 ndk() {
   dl_ndk
+  cd out
 
   # Copy the whole output folder into ndk
-  cp -af out ndk/toolchains/rust
+  cp -af collect ndk/toolchains/rust
 
   cd ndk/toolchains
 
@@ -78,7 +84,7 @@ ndk() {
   cd $LLVM_DIR/lib
   ln -sf ../../../../rust/lib/*.$DYN_EXT* .
 
-  cd ../../../../../../
+  cd ../../../../../../../
 }
 
 

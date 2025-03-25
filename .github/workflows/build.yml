@@ -22,7 +22,14 @@ jobs:
           python-version: "3.x"
 
       - name: Build toolchain
-        run: ./build.sh
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install cmake ninja-build libzstd-dev binutils-dev
+          wget https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh 19
+          rm llvm.sh
+          ./build.sh
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
@@ -55,7 +62,7 @@ jobs:
           msystem: UCRT64
           update: true
           install: make diffutils tar patch unzip gzip
-          pacboy: 7zip:p python:p cmake:p gcc:p ninja:p zstd:p
+          pacboy: 7zip:p python:p cmake:p gcc:p ninja:p zstd:p clang:p lld:p libc++:p
 
       - name: Build toolchain
         run: |
@@ -93,9 +100,10 @@ jobs:
 
       - name: Build toolchain
         run: |
-          ./build.sh clone build
+          brew reinstall ninja zstd binutils gpatch
+          ./build.sh clone build collect
           mkdir tmp
-          tar c out | xz --x86 --lzma2 > tmp/out.x64.tar.xz
+          tar c out/collect | xz --x86 --lzma2 > tmp/out.x64.tar.xz
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
@@ -119,12 +127,11 @@ jobs:
           python-version: "3.x"
 
       - name: Build toolchain
-        env:
-          SKIP_DIST: 1
         run: |
-          ./build.sh clone build
+          brew reinstall ninja zstd binutils gpatch
+          ./build.sh clone build collect
           mkdir tmp
-          tar c out | xz > tmp/out.arm64.tar.xz
+          tar c out/collect | xz > tmp/out.arm64.tar.xz
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
